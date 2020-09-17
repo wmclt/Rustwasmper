@@ -1,8 +1,11 @@
 # Componenten
-* App  
+
+* Home  
     * Clock
     * Smiley -> win/verlies
         * NewGameInput
     * HowManyBombsMinusFlags
-    * Board
+    * Board 
         * Tile
+
+        https://github.com/yewstack/yew/blob/v0.17/examples/timer/src/lib.rs

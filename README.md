@@ -8,4 +8,11 @@
     * Board 
         * Tile
 
-        https://github.com/yewstack/yew/blob/v0.17/examples/timer/src/lib.rs
+
+# Inspiration
+
+SPA Rust+ASM: http://www.sheshbabu.com/posts/rust-wasm-yew-single-page-application/
+
+Timer: https://github.com/yewstack/yew/blob/v0.17/examples/timer/src/lib.rs
+
+

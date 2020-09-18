@@ -38,23 +38,27 @@ fn generate_board() -> HashMap<(u32, u32), Tile> {
         }
 
         tiles.insert(location, Tile::Bomb(false));
-        let (col, row) = location;
-        for col_neigh in left(col)..=right(col) {
-            for row_neigh in above(row)..=below(row) {
-                let updated_tile;
-                match tiles.get(&(col_neigh, row_neigh)).unwrap() {
-                    Tile::NotBomb(nr, _) => {
-                        updated_tile = Tile::NotBomb(nr + 1, false);
-                    }
-                    _ => {
-                        continue;
+
+        let increment_neighs = |coord: &(u32, u32), tiles: &mut HashMap<(u32, u32), Tile>| {
+            let tile = tiles.get(coord).unwrap();
+            match tile  {
+                        Tile::NotBomb(nr, _) => Tile::NotBomb(nr + 1, false),
+                        _ => *tile,
                     }
                 };
-                tiles.insert((col_neigh, row_neigh), updated_tile);
-            }
-        }
+
+        apply_to_neighs(location, &mut tiles, increment_neighs);
     }
     tiles
+}
+
+fn apply_to_neighs((col, row): (u32, u32), tiles: &mut HashMap<(u32, u32), Tile>, func: fn(&(u32, u32), &mut HashMap<(u32, u32), Tile>) -> Tile) {
+    for col_neigh in left(col)..=right(col) {
+        for row_neigh in above(row)..=below(row) {
+            let updated_tile = func(&(col_neigh, row_neigh), tiles);
+            tiles.insert((col_neigh, row_neigh), updated_tile);
+        }
+    }
 }
 
 fn random_bomb_location() -> (u32, u32) {
@@ -90,10 +94,20 @@ impl Component for Board {
                     Tile::Bomb(_) => {
                         self.tiles.insert((col, row), Tile::Bomb(true));
                         self.game_over = true;
-                    }
+                    },
+                    Tile::NotBomb(0, _) => {
+                        self.tiles.insert((col, row), Tile::NotBomb(0, true));
+
+                        for col_neigh in left(col)..=right(col) {
+                            for row_neigh in above(row)..=below(row) {
+                                let _ = self.link.callback::<_>(move |_:u32| Msg::Select(col_neigh, row_neigh));
+
+                            }
+                        }
+                    },
                     Tile::NotBomb(nr, _) => {
                         self.tiles.insert((col, row), Tile::NotBomb(nr, true));
-                    }
+                    },
                 };
             }
         }
@@ -139,8 +153,8 @@ impl Board {
             match self.tiles[&tile] {
                 Tile::Bomb(_) => {
                     return "bomb";
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
         match self.tiles[&tile] {

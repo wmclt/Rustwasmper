@@ -1,6 +1,4 @@
-//! This demo originally created by https://github.com/qthree
-//! Source: https://github.com/qthree/yew_table100x100_test
-
+use rand::Rng;
 use yew::{html, Component, ComponentLink, Html, ShouldRender};
 
 const SIZE: u32 = 20;
@@ -8,6 +6,14 @@ const SIZE: u32 = 20;
 pub struct Board {
     link: ComponentLink<Self>,
     selected: Option<(u32, u32)>,
+    bombs: [(u32, u32); SIZE as usize],
+}
+
+fn random_bomb_location() -> (u32, u32) {
+    let mut generator = rand::thread_rng();
+    let x_rand = generator.gen_range(0, SIZE);
+    let y_rand = generator.gen_range(0, SIZE);
+    (x_rand, y_rand)
 }
 
 pub enum Msg {
@@ -19,9 +25,17 @@ impl Component for Board {
     type Properties = ();
 
     fn create(_: (), link: ComponentLink<Self>) -> Self {
+        let mut bomb_placements: [(u32, u32); SIZE as usize] = [(0, 0); SIZE as usize];
+
+        for index in 0..SIZE {
+            let location = random_bomb_location();
+            bomb_placements[index as usize] = location;
+        }
+
         Board {
             link,
             selected: None,
+            bombs: bomb_placements,
         }
     }
 
@@ -51,7 +65,7 @@ impl Component for Board {
 impl Board {
     fn view_square(&self, row: u32, column: u32) -> Html {
         html! {
-            <td class=square_class((column, row), self.selected)
+            <td class=square_class((column, row), self.selected, &self.bombs)
                 onclick=self.link.callback(move |_| Msg::Select(column, row))>
             </td>
         }
@@ -68,9 +82,19 @@ impl Board {
     }
 }
 
-fn square_class(this: (u32, u32), selected: Option<(u32, u32)>) -> &'static str {
+fn square_class(
+    this: (u32, u32),
+    selected: Option<(u32, u32)>,
+    bombs: &[(u32, u32); SIZE as usize],
+) -> &'static str {
     match selected {
         Some(xy) if xy == this => "square_green",
-        _ => "square_red",
+        _ => {
+            if bombs.contains(&this) {
+                "bomb"
+            } else {
+                "untouched_tile"
+            }
+        }
     }
 }

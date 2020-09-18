@@ -18,10 +18,14 @@ td {
     width: 20px;
 }
 
-.square_red {
-    background-color: #aaaaff
+.untouched_tile {
+    background-color: #696970
 }
 
 .square_green{
-    background-color: #aa5555
+    background-color: #74aa55
+}
+
+.bomb {
+    background-color: #bd2020;
 }

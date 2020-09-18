@@ -1,6 +1,6 @@
-mod home;
-mod clock;
 mod board;
+mod clock;
+mod home;
+pub use board::Board;
 pub use clock::Clock;
 pub use home::Home;
-pub use board::Board;

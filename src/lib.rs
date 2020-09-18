@@ -1,4 +1,3 @@
-
 mod pages;
 
 use pages::Home;

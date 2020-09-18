@@ -1,7 +1,7 @@
 use yew::prelude::*;
 
-use crate::pages::Clock;
 use crate::pages::Board;
+use crate::pages::Clock;
 
 pub struct Home {}
 

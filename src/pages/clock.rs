@@ -1,34 +1,45 @@
-
-use yew::{services::{Task, IntervalService}, prelude::*};
+use js_sys::Date;
 use std::time::Duration;
+use yew::{
+    prelude::*,
+    services::{ConsoleService, IntervalService, Task},
+};
 
 pub struct Clock {
-    seconds: Box<u32>,
-    _standalone: Box<dyn Task>,
+    seconds: u32,
+    callback_tick: Callback<()>,
+    job: Option<Box<dyn Task>>,
+}
+
+pub enum Msg {
+    Tick,
 }
 
 impl Component for Clock {
-    type Message = ();
+    type Message = Msg;
     type Properties = ();
 
     fn create(_: (), link: ComponentLink<Self>) -> Self {
+        ConsoleService::count_named("Clock created");
+        // let seconds_box:Box<u32> = Box::new(0);
 
-        let seconds_box:Box<u32> = Box::new(0);
+        let callback_tick = link.callback(|_| Msg::Tick);
+        let handle = IntervalService::spawn(Duration::from_secs(1), callback_tick.clone());
 
-        let callback = |_| {
-            seconds_box.as_mut().checked_add(1);
-        };
-
-        let handle =
-                        IntervalService::spawn(Duration::from_secs(1), callback.into(&mut seconds_box));
-        
         Self {
-            seconds: seconds_box,
-            _standalone: Box::new(handle),
+            seconds: 0,
+            callback_tick: callback_tick,
+            job: Some(Box::new(handle)),
         }
     }
 
-    fn update(&mut self, _: Self::Message) -> ShouldRender {
+    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+        match msg {
+            Msg::Tick => {
+                self.seconds += 1;
+                ConsoleService::info(&format!("Time: {}", self.seconds));
+            }
+        }
         true
     }
 
@@ -37,8 +48,11 @@ impl Component for Clock {
     }
 
     fn view(&self) -> Html {
-        html! { 
-            <span>{"Home Sweet Home!"}</span> 
+        html! {
+            <div>
+                <div>{ &format!("Seconds: {}", self.seconds) } </div>
+                <p>{ Date::new_0().to_string().as_string().unwrap() }</p>
+            </div>
         }
     }
 }

@@ -20,8 +20,7 @@ impl Component for Clock {
     type Properties = ();
 
     fn create(_: (), link: ComponentLink<Self>) -> Self {
-        ConsoleService::count_named("Clock created");
-        // let seconds_box:Box<u32> = Box::new(0);
+        // ConsoleService::count_named("Clock created");
 
         let callback_tick = link.callback(|_| Msg::Tick);
         let handle = IntervalService::spawn(Duration::from_secs(1), callback_tick.clone());
@@ -37,13 +36,14 @@ impl Component for Clock {
         match msg {
             Msg::Tick => {
                 self.seconds += 1;
-                ConsoleService::info(&format!("Time: {}", self.seconds));
+                // ConsoleService::info(&format!("Time: {}", self.seconds));
             }
         }
         true
     }
 
     fn change(&mut self, _: Self::Properties) -> ShouldRender {
+        self.seconds = 0;
         true
     }
 

@@ -5,7 +5,7 @@ const SIZE: u32 = 20;
 
 pub struct Board {
     link: ComponentLink<Self>,
-    selected: Option<(u32, u32)>,
+    selected: Vec<(u32, u32)>,
     bombs: [(u32, u32); SIZE as usize],
 }
 
@@ -34,7 +34,7 @@ impl Component for Board {
 
         Board {
             link,
-            selected: None,
+            selected: Vec::new(),
             bombs: bomb_placements,
         }
     }
@@ -43,7 +43,7 @@ impl Component for Board {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::Select(x, y) => {
-                self.selected = Some((x, y));
+                self.selected.push((x, y));
             }
         }
         true
@@ -65,7 +65,7 @@ impl Component for Board {
 impl Board {
     fn view_square(&self, row: u32, column: u32) -> Html {
         html! {
-            <td class=square_class((column, row), self.selected, &self.bombs)
+            <td class=square_class((column, row), &self.selected, &self.bombs)
                 onclick=self.link.callback(move |_| Msg::Select(column, row))>
             </td>
         }
@@ -84,17 +84,14 @@ impl Board {
 
 fn square_class(
     this: (u32, u32),
-    selected: Option<(u32, u32)>,
+    selected: &Vec<(u32, u32)>,
     bombs: &[(u32, u32); SIZE as usize],
 ) -> &'static str {
-    match selected {
-        Some(xy) if xy == this => "square_green",
-        _ => {
-            if bombs.contains(&this) {
-                "bomb"
-            } else {
-                "untouched_tile"
-            }
-        }
+    if selected.contains(&this) {
+        "square_green"
+    } else if bombs.contains(&this) {
+        "bomb"
+    } else {
+        "untouched_tile"
     }
 }

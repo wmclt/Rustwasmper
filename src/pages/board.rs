@@ -175,6 +175,7 @@ impl Board {
 
     fn get_tile_nr(&self, col: u32, row: u32) -> String {
         match self.tiles[&(col, row)] {
+            Tile::NotBomb(0, true) => "".to_string(),
             Tile::NotBomb(nr, true) => format!("{}", nr),
             _ => "".to_string(),
         }

@@ -5,15 +5,14 @@ use yew::{html, Component, ComponentLink, Html, ShouldRender};
 const SIZE: u32 = 20;
 const NR_OF_BOMBS: u32 = 50;
 
+#[derive(Debug, Copy, Clone)]
 pub enum Tile {
-    Bomb,
-    NotBomb(u8),
+    Bomb(bool),
+    NotBomb(u8, bool),
 }
-// TODO variable: shown!
 
 pub struct Board {
     link: ComponentLink<Self>,
-    selected: Vec<(u32, u32)>,
     game_over: bool,
     tiles: HashMap<(u32, u32), Tile>,
 }
@@ -22,7 +21,7 @@ fn generate_board() -> HashMap<(u32, u32), Tile> {
     let mut tiles: HashMap<(u32, u32), Tile> = HashMap::with_capacity((SIZE * SIZE) as usize);
     for row in 0..SIZE {
         for column in 0..SIZE {
-            tiles.insert((column, row), Tile::NotBomb(0));
+            tiles.insert((column, row), Tile::NotBomb(0, false));
         }
     }
 
@@ -31,19 +30,21 @@ fn generate_board() -> HashMap<(u32, u32), Tile> {
         loop {
             location = random_bomb_location();
             match tiles[&location] {
-                Tile::Bomb => {continue},
-                _ => {break;}
+                Tile::Bomb(_) => continue,
+                _ => {
+                    break;
+                }
             }
         }
 
-        tiles.insert(location, Tile::Bomb);
+        tiles.insert(location, Tile::Bomb(false));
         let (col, row) = location;
         for col_neigh in left(col)..=right(col) {
             for row_neigh in above(row)..=below(row) {
                 let updated_tile;
                 match tiles.get(&(col_neigh, row_neigh)).unwrap() {
-                    Tile::NotBomb(nr) => {
-                        updated_tile = Tile::NotBomb(nr + 1);
+                    Tile::NotBomb(nr, _) => {
+                        updated_tile = Tile::NotBomb(nr + 1, false);
                     }
                     _ => {
                         continue;
@@ -74,7 +75,6 @@ impl Component for Board {
     fn create(_: (), link: ComponentLink<Self>) -> Self {
         Board {
             link,
-            selected: Vec::new(),
             game_over: false,
             tiles: generate_board(),
         }
@@ -85,14 +85,16 @@ impl Component for Board {
             return false;
         }
         match msg {
-            Msg::Select(x, y) => {
-                self.selected.push((x, y));
-                match self.tiles[&(x, y)] {
-                    Tile::Bomb => {
+            Msg::Select(col, row) => {
+                match self.tiles[&(col, row)] {
+                    Tile::Bomb(_) => {
+                        self.tiles.insert((col, row), Tile::Bomb(true));
                         self.game_over = true;
                     }
-                    _ => {}
-                }
+                    Tile::NotBomb(nr, _) => {
+                        self.tiles.insert((col, row), Tile::NotBomb(nr, true));
+                    }
+                };
             }
         }
         true
@@ -135,22 +137,21 @@ impl Board {
     fn square_class(&self, tile: (u32, u32)) -> &'static str {
         if self.game_over {
             match self.tiles[&tile] {
-                Tile::Bomb => {
+                Tile::Bomb(_) => {
                     return "bomb";
                 }
                 _ => {}
             }
         }
-        if self.selected.contains(&tile) {
-            "square_green"
-        } else {
-            "untouched_tile"
+        match self.tiles[&tile] {
+            Tile::NotBomb(_, true) => "touched_tile",
+            _ => "untouched_tile",
         }
     }
 
     fn get_tile_nr(&self, col: u32, row: u32) -> String {
         match self.tiles[&(col, row)] {
-            Tile::NotBomb(nr) => format!("{}", nr),
+            Tile::NotBomb(nr, true) => format!("{}", nr),
             _ => "".to_string(),
         }
     }

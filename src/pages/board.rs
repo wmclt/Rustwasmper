@@ -2,11 +2,13 @@ use rand::Rng;
 use yew::{html, Component, ComponentLink, Html, ShouldRender};
 
 const SIZE: u32 = 20;
+const NR_OF_BOMBS:u32 = 80;
 
 pub struct Board {
     link: ComponentLink<Self>,
     selected: Vec<(u32, u32)>,
-    bombs: [(u32, u32); SIZE as usize],
+    bombs: [(u32, u32); NR_OF_BOMBS as usize],
+    game_over: bool,
 }
 
 fn random_bomb_location() -> (u32, u32) {
@@ -25,9 +27,9 @@ impl Component for Board {
     type Properties = ();
 
     fn create(_: (), link: ComponentLink<Self>) -> Self {
-        let mut bomb_placements: [(u32, u32); SIZE as usize] = [(0, 0); SIZE as usize];
+        let mut bomb_placements: [(u32, u32); NR_OF_BOMBS as usize] = [(0, 0); NR_OF_BOMBS as usize];
 
-        for index in 0..SIZE {
+        for index in 0..NR_OF_BOMBS {
             let location = random_bomb_location();
             bomb_placements[index as usize] = location;
         }
@@ -36,14 +38,21 @@ impl Component for Board {
             link,
             selected: Vec::new(),
             bombs: bomb_placements,
+            game_over: false,
         }
     }
 
     // Some details omitted. Explore the examples to get more.
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
+        if self.game_over {
+            return false
+        }
         match msg {
             Msg::Select(x, y) => {
                 self.selected.push((x, y));
+                if self.bombs.contains(&(x, y)) {
+                    self.game_over = true;
+                }
             }
         }
         true
@@ -65,7 +74,7 @@ impl Component for Board {
 impl Board {
     fn view_square(&self, row: u32, column: u32) -> Html {
         html! {
-            <td class=square_class((column, row), &self.selected, &self.bombs)
+            <td class=self.square_class((column, row))
                 onclick=self.link.callback(move |_| Msg::Select(column, row))>
             </td>
         }
@@ -80,18 +89,16 @@ impl Board {
             </tr>
         }
     }
-}
 
-fn square_class(
-    this: (u32, u32),
-    selected: &Vec<(u32, u32)>,
-    bombs: &[(u32, u32); SIZE as usize],
-) -> &'static str {
-    if selected.contains(&this) {
-        "square_green"
-    } else if bombs.contains(&this) {
-        "bomb"
-    } else {
-        "untouched_tile"
+    fn square_class(&self, this: (u32, u32)) -> &'static str {
+        if self.bombs.contains(&this) && self.game_over {
+            "bomb"
+        } else if self.selected.contains(&this) {
+            "square_green"
+        } else {
+            "untouched_tile"
+        }
     }
+
+    // fn number_of_neighbour_bom
 }

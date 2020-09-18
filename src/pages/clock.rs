@@ -2,12 +2,12 @@ use js_sys::Date;
 use std::time::Duration;
 use yew::{
     prelude::*,
-    services::{ConsoleService, IntervalService, Task},
+    services::{IntervalService, Task},
 };
 
 pub struct Clock {
     seconds: u32,
-    callback_tick: Callback<()>,
+    // callback_tick: Callback<()>,
     job: Option<Box<dyn Task>>,
 }
 
@@ -22,12 +22,10 @@ impl Component for Clock {
     fn create(_: (), link: ComponentLink<Self>) -> Self {
         // ConsoleService::count_named("Clock created");
 
-        let callback_tick = link.callback(|_| Msg::Tick);
-        let handle = IntervalService::spawn(Duration::from_secs(1), callback_tick.clone());
-
+        let handle = IntervalService::spawn(Duration::from_secs(1), link.callback(|_| Msg::Tick));
+    
         Self {
             seconds: 0,
-            callback_tick: callback_tick,
             job: Some(Box::new(handle)),
         }
     }

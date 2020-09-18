@@ -1,6 +1,7 @@
 use yew::prelude::*;
 
 use crate::pages::Clock;
+use crate::pages::Board;
 
 pub struct Home {}
 
@@ -25,6 +26,7 @@ impl Component for Home {
             <div>
                 <span>{"Home Sweet Home!"}</span>
                 <Clock/>
+                <Board/>
             </div>
         }
     }

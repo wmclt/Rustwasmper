@@ -94,31 +94,7 @@ impl Component for Board {
         }
         match msg {
             Msg::Select(col, row) => {
-                match self.tiles[&(col, row)] {
-                    Tile::Bomb(_) => {
-                        self.tiles.insert((col, row), Tile::Bomb(true));
-                        self.game_over = true;
-                    }
-                    Tile::NotBomb(0, false) => {
-                        self.tiles.insert((col, row), Tile::NotBomb(0, true));
-
-                        for col_neigh in left(col)..=right(col) {
-                            for row_neigh in above(row)..=below(row) {
-                                match self.tiles[&(col_neigh, row_neigh)] {
-                                    Tile::NotBomb(_, false) => {
-                                        self.link
-                                            .callback(move |_| Msg::Select(col_neigh, row_neigh))
-                                            .emit(());
-                                    },
-                                    _ => {}
-                                }
-                            }
-                        }
-                    }
-                    Tile::NotBomb(nr, _) => {
-                        self.tiles.insert((col, row), Tile::NotBomb(nr, true));
-                    }
-                };
+                self.click(col, row);
             }
         }
         true
@@ -135,15 +111,44 @@ impl Component for Board {
             </table>
         }
     }
+
+    fn rendered(&mut self, _first_render: bool) {}
+
+    fn destroy(&mut self) {}
 }
 
 impl Board {
+    fn click(&mut self, col: u32, row: u32) {
+
+            match self.tiles[&(col, row)] {
+                Tile::Bomb(_) => {
+                    self.tiles.insert((col, row), Tile::Bomb(true));
+                    self.game_over = true;
+                }
+                Tile::NotBomb(0, false) => {
+                    self.tiles.insert((col, row), Tile::NotBomb(0, true));
+
+                    for col_neigh in left(col)..=right(col) {
+                        for row_neigh in above(row)..=below(row) {
+                            match self.tiles[&(col_neigh, row_neigh)] {
+                                Tile::NotBomb(_, false) => {
+                                    self.click(col_neigh, row_neigh)
+                                },
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                Tile::NotBomb(nr, _) => {
+                    self.tiles.insert((col, row), Tile::NotBomb(nr, true));
+                }
+            };
+    }
     fn view_square(&self, row: u32, column: u32) -> Html {
         html! {
             <td class=self.square_class((column, row))
                 onclick=self.link.callback(move |_| Msg::Select(column, row))>
                 <div> { self.get_tile_nr(column, row) } </div>
-                // <div> { column } { row } </div>
             </td>
         }
     }

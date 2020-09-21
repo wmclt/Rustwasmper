@@ -98,9 +98,9 @@ impl Component for Board {
             },
             Msg::RightClick(col, row) => {
                 match self.tiles[&(col, row)] {
-                    Tile::Bomb(false, false) => self.tiles.insert((col, row), Tile::Bomb(false, true)),
-                    Tile::NotBomb(nr, false, false) => self.tiles.insert((col, row), Tile::NotBomb(nr, false, true)),
-                    _ => { }
+                    Tile::Bomb(false, flagged) => { self.tiles.insert((col, row), Tile::Bomb(false, !flagged)); },
+                    Tile::NotBomb(nr, false, flagged) => { self.tiles.insert((col, row), Tile::NotBomb(nr, false, !flagged)); },
+                    _ => {}
                 }
             }
         }

@@ -5,9 +5,9 @@ const SIZE: u32 = 20;
 const NR_OF_BOMBS: u32 = 50;
 
 #[derive(Debug, Copy, Clone)]
-pub enum Tile {
-    Bomb(TileState),
-    NotBomb(u8, TileState),
+pub enum TileType {
+    Bomb,
+    NotBomb(u32),
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -16,6 +16,12 @@ pub enum TileState {
     QuestionMark,
     Visible,
     Hidden,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Tile {
+    tile_type: TileType,
+    state: TileState,
 }
 
 pub struct Board {
@@ -28,7 +34,13 @@ fn generate_board() -> HashMap<(u32, u32), Tile> {
     let mut tiles: HashMap<(u32, u32), Tile> = HashMap::with_capacity((SIZE * SIZE) as usize);
     for row in 0..SIZE {
         for column in 0..SIZE {
-            tiles.insert((column, row), Tile::NotBomb(0, TileState::Hidden));
+            tiles.insert(
+                (column, row),
+                Tile {
+                    tile_type: TileType::NotBomb(0),
+                    state: TileState::Hidden,
+                },
+            );
         }
     }
 
@@ -36,20 +48,29 @@ fn generate_board() -> HashMap<(u32, u32), Tile> {
         let mut location;
         loop {
             location = random_bomb_location();
-            match tiles[&location] {
-                Tile::Bomb(_) => continue,
+            match tiles[&location].tile_type {
+                TileType::Bomb => continue,
                 _ => {
                     break;
                 }
             }
         }
 
-        tiles.insert(location, Tile::Bomb(TileState::Hidden));
+        tiles.insert(
+            location,
+            Tile {
+                tile_type: TileType::Bomb,
+                state: TileState::Hidden,
+            },
+        );
 
         let increment_neighs = |coord: &(u32, u32), tiles: &mut HashMap<(u32, u32), Tile>| {
             let tile = tiles.get(coord).unwrap();
-            match tile {
-                Tile::NotBomb(nr, _) => Tile::NotBomb(nr + 1, TileState::Hidden),
+            match tile.tile_type {
+                TileType::NotBomb(nr) => Tile {
+                    tile_type: TileType::NotBomb(nr + 1),
+                    state: TileState::Hidden,
+                },
                 _ => *tile,
             }
         };
@@ -130,60 +151,45 @@ impl Component for Board {
 
 impl Board {
     fn click(&mut self, col: u32, row: u32) {
-        match self.tiles[&(col, row)] {
-            Tile::Bomb(TileState::Hidden) => {
-                self.tiles
-                    .insert((col, row), Tile::Bomb(TileState::Visible));
+        let tile_type = self.tiles[&(col, row)].tile_type;
+        self.tiles.insert(
+            (col, row),
+            Tile {
+                tile_type,
+                state: TileState::Visible,
+            },
+        );
+        match tile_type {
+            TileType::Bomb => {
                 self.game_over = true;
             }
-            Tile::NotBomb(0, TileState::Hidden) => {
-                self.tiles
-                    .insert((col, row), Tile::NotBomb(0, TileState::Visible));
-
+            TileType::NotBomb(0) => {
                 for col_neigh in left(col)..=right(col) {
                     for row_neigh in above(row)..=below(row) {
-                        match self.tiles[&(col_neigh, row_neigh)] {
-                            Tile::NotBomb(_, TileState::Hidden) => self.click(col_neigh, row_neigh),
+                        let neigh_tile = self.tiles[&(col_neigh, row_neigh)];
+                        match neigh_tile.state {
+                            TileState::Hidden => {
+                                self.click(col_neigh, row_neigh);
+                            }
                             _ => {}
                         }
                     }
                 }
             }
-            Tile::NotBomb(nr, TileState::Hidden) => {
-                self.tiles
-                    .insert((col, row), Tile::NotBomb(nr, TileState::Visible));
-            }
-            _ => {}
+            TileType::NotBomb(_) => {}
         };
     }
 
     fn right_click(&mut self, col: u32, row: u32) {
-        match self.tiles[&(col, row)] {
-            Tile::Bomb(TileState::Hidden) => {
-                self.tiles
-                    .insert((col, row), Tile::Bomb(TileState::Flagged));
-            }
-            Tile::Bomb(TileState::Flagged) => {
-                self.tiles
-                    .insert((col, row), Tile::Bomb(TileState::QuestionMark));
-            }
-            Tile::Bomb(TileState::QuestionMark) => {
-                self.tiles.insert((col, row), Tile::Bomb(TileState::Hidden));
-            }
-            Tile::NotBomb(nr, TileState::Hidden) => {
-                self.tiles
-                    .insert((col, row), Tile::NotBomb(nr, TileState::Flagged));
-            }
-            Tile::NotBomb(nr, TileState::Flagged) => {
-                self.tiles
-                    .insert((col, row), Tile::NotBomb(nr, TileState::QuestionMark));
-            }
-            Tile::NotBomb(nr, TileState::QuestionMark) => {
-                self.tiles
-                    .insert((col, row), Tile::NotBomb(nr, TileState::Hidden));
-            }
-            _ => {}
-        }
+        let tile = self.tiles[&(col, row)];
+        let tile_type = tile.tile_type;
+        let state = match tile.state {
+            TileState::Hidden => TileState::Flagged,
+            TileState::Flagged => TileState::QuestionMark,
+            TileState::QuestionMark => TileState::Hidden,
+            TileState::Visible => TileState::Visible,
+        };
+        self.tiles.insert((col, row), Tile { tile_type, state });
     }
 
     fn view_square(&self, row: u32, column: u32) -> Html {
@@ -206,33 +212,32 @@ impl Board {
         }
     }
 
-    fn square_class(&self, tile: (u32, u32)) -> &'static str {
+    fn square_class(&self, coord: (u32, u32)) -> &'static str {
         if self.game_over {
-            match self.tiles[&tile] {
-                Tile::Bomb(_) => {
+            match self.tiles[&coord].tile_type {
+                TileType::Bomb => {
                     return "bomb";
                 }
                 _ => {}
             }
         }
-        match self.tiles[&tile] {
-            Tile::NotBomb(_, TileState::Visible) => "touched_tile",
-            Tile::NotBomb(_, TileState::Flagged) => "flag",
-            Tile::NotBomb(_, TileState::QuestionMark) => "question-mark",
-            Tile::Bomb(TileState::Flagged) => "flag",
-            Tile::Bomb(TileState::QuestionMark) => "question-mark",
-            _ => "untouched_tile",
+        match self.tiles[&coord].state {
+            TileState::Visible => "visible",
+            TileState::Flagged => "flag",
+            TileState::QuestionMark => "question-mark",
+            _ => "hidden",
         }
     }
 
     fn get_tile_symbol(&self, col: u32, row: u32) -> String {
-        match self.tiles[&(col, row)] {
-            Tile::NotBomb(0, TileState::Visible) => "".to_string(),
-            Tile::NotBomb(nr, TileState::Visible) => format!("{}", nr),
-            Tile::NotBomb(_, TileState::Flagged) => "🚩".to_string(),
-            Tile::NotBomb(_, TileState::QuestionMark) => "❓".to_string(),
-            Tile::Bomb(TileState::Flagged) => "🚩".to_string(),
-            Tile::Bomb(TileState::QuestionMark) => "❓".to_string(),
+        match self.tiles[&(col, row)].state {
+            TileState::Flagged => "🚩".to_string(),
+            TileState::QuestionMark => "❓".to_string(),
+            TileState::Visible => match self.tiles[&(col, row)].tile_type {
+                TileType::NotBomb(0) => "".to_string(),
+                TileType::NotBomb(nr) => format!("{}", nr),
+                _ => "".to_string(),
+            },
             _ => "".to_string(),
         }
     }

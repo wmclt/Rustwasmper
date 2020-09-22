@@ -19,11 +19,11 @@ td {
     width: 25px;
 }
 
-.untouched_tile {
+.hidden {
     background-color: #696970
 }
 
-.touched_tile{
+.visible{
     background-color: #74aa55
 }
 

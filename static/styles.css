@@ -13,10 +13,10 @@ table {
 }
 
 tr {
-    height: 20px;
+    height: 25px;
 }
 td {
-    width: 20px;
+    width: 25px;
 }
 
 .untouched_tile {
@@ -30,6 +30,11 @@ td {
 .bomb {
     background-color: #bd2020;
 }
+
 .flag {
-    background-color: #74bd20;
+    background-color: #dadd14;
+}
+
+.question-mark {
+    background-color: #dadd14;
 }
